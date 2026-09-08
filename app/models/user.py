@@ -17,6 +17,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 
+
 class Gender(str, PyEnum):
     MALE = "male"
     FEMALE = "female"
