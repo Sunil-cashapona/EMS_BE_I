@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from jose import jwt
 from passlib.context import CryptContext
-from app.core.config import Settings
+from app.core.config import settings
 
 
 # Password hashing
@@ -13,12 +13,15 @@ pwd_context = CryptContext(
 
 
 # JWT configuration
-SECRET_KEY = Settings.jwt_secret_key
-ALGORITHM = Settings.jwt_algorithm 
+SECRET_KEY = settings.jwt_secret_key
+ALGORITHM = settings.jwt_algorithm 
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 120 
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(

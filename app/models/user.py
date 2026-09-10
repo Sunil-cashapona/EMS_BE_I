@@ -38,6 +38,7 @@ class EmploymentType(str, PyEnum):
 class User(Base):
 
     __tablename__ = "txn_user"
+    __table_args__ = {"schema": "EMS_DB"}
 
     id: Mapped[int] = mapped_column(
         BigInteger,
@@ -122,7 +123,7 @@ class User(Base):
         nullable=False
     )
 
-    employee_code: Mapped[str] = mapped_column(
+    employee_id: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
         unique=True
