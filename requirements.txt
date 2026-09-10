@@ -3,6 +3,7 @@ uvicorn
 SQLAlchemy
 psycopg[binary]
 pydantic-settings
+email-validator
 
 #JWT Authentication
 python-jose[cryptography]

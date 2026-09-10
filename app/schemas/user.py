@@ -11,20 +11,27 @@ from pydantic import (
 from app.models.user import Gender, Role, EmploymentType
 
 class LoginRequest(BaseModel):
-    email:EmailStr
-    password:str = Field(...,min_length=1)
+    email: EmailStr
+    password: str = Field(..., min_length=1)
     
     
-    @field_validator(email)
+    @field_validator("email")
     @classmethod
     def normalize_email(cls, value:EmailStr) ->EmailStr:
-        return EmailStr(str(value).strip().lower())
+        return str(value).strip().lower()
     
-class TOkenResponse(BaseModel):
-    access_token:str
-    token_type:str
+class LoginUser(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
     role: str
-    user_id: int
+
+
+class LoginResponse(BaseModel):
+    user: LoginUser
+    access_token: str
+    refresh_token: str
+    token_type: str
     
 class UserCreate(BaseModel):
     first_name: str = Field(..., max_length=100)
@@ -39,9 +46,12 @@ class UserCreate(BaseModel):
 
     dep_id: int | None = None
     designation_id: int | None = None
+    created_at: datetime
+    updated_at: datetime
+    #last_login: datetime | None = None
 
     address: str
-    employee_code: str = Field(..., max_length=30)
+    employee_id: str = Field(..., max_length=30)
     joining_date: date
     employment_type: EmploymentType
 
@@ -49,13 +59,13 @@ class UserCreate(BaseModel):
     blood_group: str | None = Field(default=None, max_length=10)
 
     @field_validator(
-        first_name,
-        last_name,
-        address,
-        employee_code,
-        phonenumber,
-        emergency_contact,
-        blood_group,
+        "first_name",
+        "last_name",
+        "address",
+        "employee_id",
+        "phonenumber",
+        "emergency_contact",
+        "blood_group",
         mode="before"
     )
     @classmethod
@@ -71,7 +81,7 @@ class UserCreate(BaseModel):
     @field_validator("email")
     @classmethod
     def normalize_email(cls, value: EmailStr) -> EmailStr:
-        return EmailStr(str(value).strip().lower())
+        return str(value).strip().lower()
     
     @field_validator("dob")
     @classmethod
@@ -89,11 +99,11 @@ class UserCreate(BaseModel):
 
         return value
     
-    @field_validator("employee_code")
+    @field_validator("employee_id")
     @classmethod
-    def validate_employee_code(cls, value: str) -> str:
+    def validate_employee_id(cls, value: str) -> str:
         if not value:
-            raise ValueError("Employee code cannot be empty")
+            raise ValueError("Employee ID cannot be empty")
 
         return value
     
@@ -135,7 +145,7 @@ class UserEdit(BaseModel):
     designation_id: int | None = None
 
     address: str | None = None
-    employee_code: str | None = Field(default=None, max_length=30)
+    employee_id: str | None = Field(default=None, max_length=30)
     joining_date: date | None = None
     employment_type: EmploymentType | None = None
 
@@ -147,7 +157,7 @@ class UserEdit(BaseModel):
         "first_name",
         "last_name",
         "address",
-        "employee_code",
+        "employee_id",
         "phonenumber",
         "emergency_contact",
         "blood_group",
@@ -171,7 +181,7 @@ class UserEdit(BaseModel):
         if value is None:
             return value
 
-        return EmailStr(str(value).strip().lower())
+        return str(value).strip().lower()
 
 
     @field_validator("dob")
@@ -228,7 +238,7 @@ class UserEdit(BaseModel):
 
 
 
-class UserRead(BaseModel):
+class UserResponse(BaseModel):
     id: int
     first_name: str
     last_name: str | None = None
@@ -243,7 +253,7 @@ class UserRead(BaseModel):
     designation_id: int | None = None
 
     address: str
-    employee_code: str
+    employee_id: str
     joining_date: date
     employment_type: EmploymentType
 
