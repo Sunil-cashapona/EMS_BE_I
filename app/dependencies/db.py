@@ -6,4 +6,4 @@ from app.core.database import get_db
 
 
 def database_session() -> Generator[Session, None, None]:
-    yield from get_db()
+    yield from get_db() 

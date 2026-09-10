@@ -3,3 +3,10 @@ uvicorn
 SQLAlchemy
 psycopg[binary]
 pydantic-settings
+
+#JWT Authentication
+python-jose[cryptography]
+
+#password hashing
+passlib[bcrypt]
+
