@@ -57,6 +57,8 @@ class UserCreate(BaseModel):
 
     emergency_contact: str = Field(..., max_length=20)
     blood_group: str | None = Field(default=None, max_length=10)
+    salary:  float | None = None
+    lic_policy_number: str |None=None
 
     @field_validator(
         "first_name",
@@ -125,6 +127,14 @@ class UserCreate(BaseModel):
     def validate_password(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("Password cannot be empty")
+        if len(value) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        if not any(char.isdigit() for char in value):
+            raise ValueError("Password must contain at least one digit")
+        if not any (char.isupper() for char in value):
+            raise ValueError ("Password must contain at least one uppercase letter")
+        if not any(char.isalnum() for char in value):
+            raise ValueError ("Password must contain atleast one special character")
 
         return value
     
@@ -256,6 +266,8 @@ class UserResponse(BaseModel):
     employee_id: str
     joining_date: date
     employment_type: EmploymentType
+    salary: float | None = None
+    lic_policy_number: str | None = None
 
     emergency_contact: str
     blood_group: str | None = None

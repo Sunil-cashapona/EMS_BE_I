@@ -10,4 +10,5 @@ python-jose[cryptography]
 
 #password hashing
 passlib[bcrypt]
+email-validator
 

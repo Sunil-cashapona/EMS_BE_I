@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime, timezone
 from enum import Enum as PyEnum
 
 from sqlalchemy import (
@@ -9,7 +9,8 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     String,
-    Text
+    Text,
+    Numeric
 )
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -56,7 +57,7 @@ class User(Base):
         nullable=False
     )
 
-    dob: Mapped[date] = mapped_column(
+    dob: Mapped[datetime] = mapped_column(
         Date,
         nullable=False
     )
@@ -99,12 +100,15 @@ class User(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
         nullable=False
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.ist),
+        onupdate=lambda: datetime.now(timezone.ist),
         nullable=False
     )
 
@@ -129,7 +133,7 @@ class User(Base):
         unique=True
     )
 
-    joining_date: Mapped[date] = mapped_column(
+    joining_date: Mapped[datetime] = mapped_column(
         Date,
         nullable=False
     )
@@ -138,6 +142,17 @@ class User(Base):
         Enum(EmploymentType),
         nullable=False
     )
+    
+    salary: Mapped[float | None] = mapped_column(
+    Numeric(12, 2),
+    nullable=True
+    )
+
+    lic_policy_number: Mapped[str | None] = mapped_column(
+    String(50),
+    nullable=True
+    )
+    
 
     emergency_contact: Mapped[str] = mapped_column(
         String(20),
@@ -156,3 +171,5 @@ class User(Base):
     designation = relationship(
         "Designation"
     )
+
+
