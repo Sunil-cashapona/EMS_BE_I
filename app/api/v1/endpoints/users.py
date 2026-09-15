@@ -2,7 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.core.security import authorization_user, hash_password
+from app.core.security import authorization_user, hash_password,get_current_user
 from app.models.user import User
 from app.core.database import get_db
 from app.schemas.user import UserCreate, UserEdit, UserResponse
@@ -53,21 +53,42 @@ def update_user(
     employee_id: str,
     user_data: UserEdit,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     user = db.query(User).filter(User.employee_id == employee_id).first()
-    if not user:
+    if  user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+
+    if current_user.role =="admin":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin can not update"
+        )
+
+    if current_user.employee_id !=employee_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You can only update your details"
+        )
+
+    update_data=user_data.model_dump(exclude_unset=True)
+
+    for field,value in update_data.items():
+        setattr(user,field,value)
+
+    db.commit()
+    db.refresh(user)
+
     return user
 
 
 
 
-
 @router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(employee_id: str, db: Session = Depends(get_db)):
+def delete_user(employee_id: str, db: Session = Depends(get_db), current_user: User = Depends(authorization_user)):
     user = db.query(User).filter(User.employee_id == employee_id).first()
     if user is None:
         raise HTTPException(

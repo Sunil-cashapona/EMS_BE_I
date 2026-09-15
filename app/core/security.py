@@ -7,6 +7,9 @@ from app.core.config import settings
 from app.models.user import User
 from app.core.database import get_db
 from fastapi import Response
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
 
 # Password hashing
 pwd_context = CryptContext(
@@ -79,39 +82,44 @@ def decode_token(token: str) -> dict:
     )
 
 def get_current_user(
-        request: Request,
-        db: Session = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
-    token=request.cookies.get("access_token")
 
-    if token is None:
-        raise credentials_exception
-    
+    token = credentials.credentials
+
     try:
-        payload=jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
 
-        user_id=payload.get("sub")
+        user_id = payload.get("sub")
 
         if user_id is None:
             raise credentials_exception
-        user_id=int(user_id)
-        
-    except (JWTError,ValueError):
-        raise credentials_exception   
-    
-    current_user=db.query(User).filter(User.id==user_id).first()
+
+        user_id = int(user_id)
+
+    except (JWTError, ValueError):
+        raise credentials_exception
+
+    current_user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
 
     if current_user is None:
         raise credentials_exception
-    
-    return current_user
 
+    return current_user
 
 
 
