@@ -1,9 +1,12 @@
 from datetime import datetime, timedelta, timezone
-
-from jose import jwt
+from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy.orm import Session
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.config import settings
-
+from app.models.user import User
+from app.core.database import get_db
+from fastapi import Response
 
 # Password hashing
 pwd_context = CryptContext(
@@ -74,3 +77,52 @@ def decode_token(token: str) -> dict:
         token,SECRET_KEY,
         algorithms=[ALGORITHM]
     )
+
+def get_current_user(
+        request: Request,
+        db: Session = Depends(get_db)
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    token=request.cookies.get("access_token")
+
+    if token is None:
+        raise credentials_exception
+    
+    try:
+        payload=jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        user_id=payload.get("sub")
+
+        if user_id is None:
+            raise credentials_exception
+        user_id=int(user_id)
+        
+    except (JWTError,ValueError):
+        raise credentials_exception   
+    
+    current_user=db.query(User).filter(User.id==user_id).first()
+
+    if current_user is None:
+        raise credentials_exception
+    
+    return current_user
+
+
+
+
+
+
+def authorization_user(
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role !="admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin Access Required",
+        )
+    return current_user

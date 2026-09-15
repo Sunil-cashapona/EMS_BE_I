@@ -13,7 +13,7 @@ from app.models import attendence, departments, designation, file, holiday
 from app.models import leave_request, leave_type, notification, payroll_settings
 from app.models import reference_type, reference_value, salary_record, salary_structure, user, user_lic
 
-
+from sqlalchemy import engine_from_config, pool, text
 # Alembic Config object
 config = context.config
 

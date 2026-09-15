@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
-
+from sqlalchemy import Numeric
 from sqlalchemy import (
     BigInteger,
     Boolean,
