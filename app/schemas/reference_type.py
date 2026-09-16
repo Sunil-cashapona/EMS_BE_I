@@ -14,3 +14,6 @@ class ReferenceTypeRead(BaseModel):
     type_name: str
 
     model_config = ConfigDict(from_attributes=True)
+
+class DropdownRequest(BaseModel):
+    reference_type: str    
