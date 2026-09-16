@@ -26,6 +26,7 @@ class AttendanceStatus(str, PyEnum):
 class Attendance(Base):
 
     __tablename__ = "txn_attendence"
+    __table__args__ = {"schema": "EMS_DB"}
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
@@ -33,7 +34,7 @@ class Attendance(Base):
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("txn_user.id"),
+        ForeignKey("EMS_DB.txn_user.id"),
         nullable=False
     )
 

@@ -151,7 +151,7 @@ def update_user(
 
 @router.delete(
     "/",
-    status_code=status.HTTP_204_NO_CONTENT
+    status_code=status.HTTP_200_OK
 )
 def delete_user(
     user_data: UserDelete,
@@ -173,4 +173,6 @@ def delete_user(
     db.delete(user)
     db.commit()
 
-    return None
+    return {
+        "message": "User deleted successfully",
+    }

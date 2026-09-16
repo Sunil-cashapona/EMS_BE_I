@@ -107,20 +107,20 @@ class User(Base):
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.ist),
+        default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False
     )
 
     dep_id: Mapped[int | None] = mapped_column(
-        ForeignKey("mst_department.id"),
-        nullable=True
-    )
+    ForeignKey("EMS_DB.mst_reference_value.id"),
+    nullable=True
+)
 
     designation_id: Mapped[int | None] = mapped_column(
-        ForeignKey("mst_designation.id"),
-        nullable=True
-    )
+    ForeignKey("EMS_DB.mst_reference_value.id"),
+    nullable=True
+)
 
     address: Mapped[str] = mapped_column(
         Text,
@@ -164,12 +164,12 @@ class User(Base):
         nullable=True
     )
 
-    department = relationship(
-        "Department"
-    )
+    # department = relationship(
+    #     "Department"
+    # )
 
-    designation = relationship(
-        "Designation"
-    )
+    # designation = relationship(
+    #     "Designation"
+    # )
 
 

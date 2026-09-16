@@ -8,7 +8,7 @@ class ReferenceType(Base):
 
     __tablename__ = "mst_reference_type"
     __table_args__ = {"schema": "EMS_DB"}
-    
+
     id: Mapped[int] = mapped_column(
         primary_key=True,
         autoincrement=True
