@@ -23,6 +23,7 @@ class SalaryStatus(str, PyEnum):
 class SalaryRecord(Base):
 
     __tablename__ = "txn_salary_records"
+    __table_args__ = {"schema": "EMS_DB"}  
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
@@ -30,7 +31,7 @@ class SalaryRecord(Base):
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("txn_user.id"),
+        ForeignKey("EMS_DB.txn_user.id"),
         nullable=False
     )
 
