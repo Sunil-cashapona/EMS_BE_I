@@ -1,0 +1,31 @@
+from app.api.v1.endpoints import (
+    attendance,
+    department,
+    designations,
+    files,
+    holidays,
+    leave_requests,
+    leaves_type,
+    notifications,
+    payroll_settings,
+    payroll,
+    reference,
+    user_lic,
+    users,
+)
+
+__all__ = [
+    "attendance",
+    "department",
+    "designations",
+    "files",
+    "holidays",
+    "leave_requests",
+    "leaves_type",
+    "notifications",
+    "payroll_settings",
+    "payroll",
+    "reference",
+    "user_lic",
+    "users",
+]
