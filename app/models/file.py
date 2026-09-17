@@ -9,6 +9,8 @@ from app.core.database import Base
 class UserFile(Base):
 
     __tablename__ = "txn_files"
+    __table_args__ = {"schema": "EMS_DB"}  
+
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
@@ -16,7 +18,7 @@ class UserFile(Base):
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("txn_user.id"),
+        ForeignKey("EMS_DB.txn_user.id"),
         nullable=False
     )
 

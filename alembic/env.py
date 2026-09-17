@@ -6,14 +6,15 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import pool
-
+from app.models.user import User
+from app.models.address import Address
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.models import attendence, departments, designation, file, holiday
 from app.models import leave_request, leave_type, notification, payroll_settings
-from app.models import reference_type, reference_value, salary_record, salary_structure, user, user_lic
+from app.models import reference_type, reference_value, salary_record, salary_structure, user, user_lic,address
 
-
+from sqlalchemy import engine_from_config, pool, text
 # Alembic Config object
 config = context.config
 
@@ -56,6 +57,8 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            version_table_schema="EMS_DB",
+
         )
 
         with context.begin_transaction():

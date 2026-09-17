@@ -9,6 +9,7 @@ from app.core.database import Base
 class UserLIC(Base):
 
     __tablename__ = "txn_user_lic"
+    __table_args__ = {"schema": "EMS_DB"}  
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
@@ -16,7 +17,7 @@ class UserLIC(Base):
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("txn_user.id"),
+        ForeignKey("EMS_DB.txn_user.id"),
         nullable=False
     )
 

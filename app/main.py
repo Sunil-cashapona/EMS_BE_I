@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.api.v1 import login
-from app.api.v1.endpoints import users
+from app.api.v1.endpoints import users,dropdown
 app = FastAPI(title="Employee Management System")
 
 @app.get("/")
@@ -9,3 +9,4 @@ def read_root():
 
 app.include_router(users.router)
 app.include_router(login.router)
+app.include_router(dropdown.router)

@@ -24,6 +24,7 @@ class LeaveStatus(str, PyEnum):
 class LeaveRequest(Base):
 
     __tablename__ = "txn_leave_request"
+    __table_args__ = {"schema": "EMS_DB"}  
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
@@ -31,12 +32,12 @@ class LeaveRequest(Base):
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("txn_user.id"),
+        ForeignKey("EMS_DB.txn_user.id"),
         nullable=False
     )
 
     leave_type_id: Mapped[int] = mapped_column(
-        ForeignKey("mst_leave_type.id"),
+        ForeignKey("EMS_DB.mst_leave_type.id"),
         nullable=False
     )
 
@@ -62,7 +63,7 @@ class LeaveRequest(Base):
     )
 
     approved: Mapped[int | None] = mapped_column(
-        ForeignKey("txn_user.id"),
+        ForeignKey("EMS_DB.txn_user.id"),
         nullable=True
     )
 

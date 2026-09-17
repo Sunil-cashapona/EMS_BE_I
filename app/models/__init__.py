@@ -1,9 +1,9 @@
 from app.core.database import Base
 from app.models.user import User
 from app.models.user_lic import UserLic
-from app.models.departments import Department
+from app.models.department import Department
 from app.models.designation import Designation
-from app.models.attendence import Attendence
+from app.models.attendance import Attendance
 from app.models.holiday import Holiday
 from app.models.leave_type import LeaveType
 from app.models.leave_request import LeaveRequest
@@ -21,7 +21,7 @@ __all__ = [
     "UserLic",
     "Department",
     "Designation",
-    "Attendence",
+    "Attendance",
     "Holiday",
     "LeaveType",
     "LeaveRequest",

@@ -7,6 +7,7 @@ from app.core.database import Base
 class ReferenceValue(Base):
 
     __tablename__ = "mst_reference_value"
+    __table_args__ = {"schema": "EMS_DB"}
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
@@ -14,7 +15,7 @@ class ReferenceValue(Base):
     )
 
     reference_type_id: Mapped[int] = mapped_column(
-        ForeignKey("mst_reference_type.id"),
+        ForeignKey("EMS_DB.mst_reference_type.id"),
         nullable=False
     )
 
