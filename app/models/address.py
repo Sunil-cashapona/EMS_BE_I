@@ -38,5 +38,3 @@ class Address(Base):
         String(20),
         nullable=False
     )
-
-   
