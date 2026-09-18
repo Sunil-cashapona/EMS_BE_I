@@ -28,6 +28,12 @@ def login_user(login_data: LoginRequest, db: Session):
             detail="Invalid email or password"
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive"
+        )
+
     # Verify password
     if not verify_password(
         login_data.password,
