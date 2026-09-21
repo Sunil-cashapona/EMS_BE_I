@@ -1,54 +1,147 @@
+from datetime import datetime
+from decimal import Decimal
 from typing import List
-from datetime import date
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.dependencies.auth import get_current_user
-from app.dependencies.db import get_db
-from app.models.attendence import Attendence
+from app.core.database import get_db
+from app.core.security import get_current_user
+from app.models.attendance import Attendance, AttendanceStatus
 from app.models.user import User
-from app.schemas.attendence import AttendanceCreate, AttendanceEdit, AttendanceRead
+from app.schemas.attendance import AttendanceRead
 
-router = APIRouter()
+router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
-@router.post("/check-in", response_model=AttendanceRead, status_code=status.HTTP_201_CREATED)
-def check_in(
-    attendance_in: AttendanceCreate,
+# Match your company's operational timezone
+APP_TIMEZONE = ZoneInfo("Asia/Kolkata")
+
+
+def get_current_localized_time():
+    return datetime.now(APP_TIMEZONE)
+
+
+# 1. PUNCH IN
+@router.post(
+    "/punch-in",
+    response_model=AttendanceRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def punch_in(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    attendance = Attendence(**attendance_in.model_dump(), user_id=current_user.id)
-    db.add(attendance)
-    db.commit()
-    db.refresh(attendance)
-    return attendance
+    now = get_current_localized_time()
+    today = now.date()
 
+    record = (
+        db.query(Attendance)
+        .filter(Attendance.user_id == current_user.id, Attendance.date == today)
+        .first()
+    )
+    if record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have already punched in for today.",
+        )
+
+    attendance_entry = Attendance(
+        user_id=current_user.id,
+        date=today,
+        check_in=now.time(),
+        status=AttendanceStatus.PRESENT,
+    )
+
+    try:
+        db.add(attendance_entry)
+        db.commit()
+        db.refresh(attendance_entry)
+        return attendance_entry
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Attendance entry already exists for today.",
+        )
+
+
+# 2. PUNCH OUT
+@router.patch("/punch-out", response_model=AttendanceRead)
+def punch_out(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    now = get_current_localized_time()
+    today = now.date()
+
+    record = (
+        db.query(Attendance)
+        .filter(Attendance.user_id == current_user.id, Attendance.date == today)
+        .first()
+    )
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No punch-in entry found for today. Please punch in first.",
+        )
+
+    if record.check_out is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have already punched out for today.",
+        )
+
+    record.check_out = now.time()
+
+    if record.check_in:
+        check_in_dt = datetime.combine(today, record.check_in, tzinfo=APP_TIMEZONE)
+        duration_seconds = (now - check_in_dt).total_seconds()
+
+        # Precise Decimal division
+        hours = round(Decimal(str(duration_seconds)) / Decimal("3600"), 2)
+        record.working_hours = hours
+
+        if hours < Decimal("4.0"):
+            record.status = AttendanceStatus.HALF_DAY
+        else:
+            record.status = AttendanceStatus.PRESENT
+
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+# 3. GET ATTENDANCE (Role-Scoped History)
 @router.get("/", response_model=List[AttendanceRead])
 def read_attendance_records(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    if getattr(current_user, "role", None) == "admin":
-        return db.query(Attendence).offset(skip).limit(limit).all()
-    return db.query(Attendence).filter(Attendence.user_id == current_user.id).offset(skip).limit(limit).all()
+    query = db.query(Attendance)
 
-@router.patch("/{attendance_id}/check-out", response_model=AttendanceRead)
-def check_out(
-    attendance_id: int,
-    attendance_in: AttendanceEdit,
+    user_role = getattr(current_user.role, "value", current_user.role)
+    if user_role != "admin":
+        query = query.filter(Attendance.user_id == current_user.id)
+
+    return query.order_by(Attendance.date.desc()).offset(skip).limit(limit).all()
+
+
+# 4. GET LOGGED-IN EMPLOYEE'S HISTORY
+@router.get("/my", response_model=List[AttendanceRead])
+def get_my_attendance_history(
+    skip: int = 0,
+    limit: int = 31,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    record = db.query(Attendence).filter(Attendence.id == attendance_id).first()
-    if not record:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attendance record not found")
-        
-    update_data = attendance_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(record, field, value)
-        
-    db.commit()
-    db.refresh(record)
-    return record
+    return (
+        db.query(Attendance)
+        .filter(Attendance.user_id == current_user.id)
+        .order_by(Attendance.date.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
