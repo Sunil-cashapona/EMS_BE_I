@@ -1,7 +1,6 @@
 from datetime import date as DateType, time as TimeType
 from decimal import Decimal
 from enum import Enum
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -37,6 +36,24 @@ class AttendanceRead(BaseModel):
     check_in: TimeType | None = None
     check_out: TimeType | None = None
     working_hours: Decimal | None = None
+    status: AttendanceStatus
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# --- Dedicated Punch-In / Punch-Out Response Payloads ---
+
+class PunchInResponse(BaseModel):
+    id: int
+    check_in: TimeType
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PunchOutResponse(BaseModel):
+    id: int
+    check_out: TimeType
+    working_hours: Decimal | None = Field(default=None, max_digits=5, decimal_places=2)
     status: AttendanceStatus
 
     model_config = ConfigDict(from_attributes=True)
