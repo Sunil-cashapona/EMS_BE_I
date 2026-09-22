@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
 
+from EMS_BE_I.app.models import attendance
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from logging.config import fileConfig
 
@@ -10,7 +12,7 @@ from app.models.user import User
 from app.models.address import Address
 from app.core.config import settings
 from app.core.database import Base, engine
-from app.models import attendence, departments, designation, file, holiday
+from app.models import departments, designation, file, holiday
 from app.models import leave_request, leave_type, notification, payroll_settings
 from app.models import reference_type, reference_value, salary_record, salary_structure, user, user_lic,address
 

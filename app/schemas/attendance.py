@@ -17,8 +17,6 @@ class AttendanceCreate(BaseModel):
     date: DateType
     check_in: TimeType | None = None
     check_out: TimeType | None = None
-    working_hours: Decimal | None = Field(default=None, max_digits=5, decimal_places=2)
-    status: AttendanceStatus
 
 
 class AttendanceEdit(BaseModel):
@@ -26,9 +24,6 @@ class AttendanceEdit(BaseModel):
     date: DateType | None = None
     check_in: TimeType | None = None
     check_out: TimeType | None = None
-    working_hours: Decimal | None = Field(default=None, max_digits=5, decimal_places=2)
-    status: AttendanceStatus | None = None
-
 
 class AttendanceRead(BaseModel):
     id: int
@@ -40,3 +35,9 @@ class AttendanceRead(BaseModel):
     status: AttendanceStatus
 
     model_config = ConfigDict(from_attributes=True)
+''
+class AttendenceSummaryResponse(BaseModel):
+    days_present: int
+    days_absent: int
+    total_hours_logged: Decimal
+    average_daily_work_hours : Decimal
