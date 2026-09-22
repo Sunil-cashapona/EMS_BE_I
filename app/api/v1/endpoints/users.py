@@ -176,3 +176,33 @@ def delete_user(
     return {
         "message": "User deleted successfully",
     }
+
+@router.patch("/{employee_id}/status")
+def update_user_status(
+    employee_id: str, 
+    is_active:bool,
+    db:Session=Depends(get_db),
+    current_user: User=Depends(authorization_user)
+):
+
+    user = (
+        db.query(User).filter(User.employee_id==employee_id)
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    user.is_active=is_active
+
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "message": "User status updated successfully",
+        "employee_id": user.employee_id,
+        "is_active": user.is_active
+    }

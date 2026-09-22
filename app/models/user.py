@@ -17,23 +17,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
-
-
-class Gender(str, PyEnum):
-    MALE = "male"
-    FEMALE = "female"
-    OTHER = "other"
-
-
 class Role(str, PyEnum):
     ADMIN = "admin"
     EMPLOYEE = "employee"
-
-
-class EmploymentType(str, PyEnum):
-    FULL_TIME = "full_time"
-    PART_TIME = "part_time"
-    CONTRACT = "contract"
 
 
 class User(Base):
@@ -54,7 +40,7 @@ class User(Base):
 
     first_name: Mapped[str] = mapped_column(
         String(100),
-        nullable=False
+        nullable=False  
     )
 
     dob: Mapped[datetime] = mapped_column(
@@ -62,8 +48,8 @@ class User(Base):
         nullable=False
     )
 
-    gender: Mapped[Gender | None] = mapped_column(
-        Enum(Gender),
+    gender_id: Mapped[int | None] = mapped_column(
+        ForeignKey("EMS_DB.mst_reference_value.id"),
         nullable=True
     )
 
@@ -122,10 +108,9 @@ class User(Base):
     nullable=True
 )
 
-    address: Mapped[str] = mapped_column(
-        Text,
-        nullable=False
-    )
+    address= relationship("Address",
+                          back_populates="User",uselist=False)
+    
 
     employee_id: Mapped[str] = mapped_column(
         String(30),
@@ -138,8 +123,8 @@ class User(Base):
         nullable=False
     )
 
-    employment_type: Mapped[EmploymentType] = mapped_column(
-        Enum(EmploymentType),
+    employment_type_id: Mapped[int|None] = mapped_column(
+        ForeignKey("EMS_DB.mst_reference_value.id"),
         nullable=False
     )
     
@@ -159,10 +144,15 @@ class User(Base):
         nullable=False
     )
 
-    blood_group: Mapped[str | None] = mapped_column(
-        String(10),
+    blood_group_id: Mapped[str | None] = mapped_column(
+        ForeignKey("EMS_DB.mst_reference_value.id"),
         nullable=True
     )
+    work_shift_id: Mapped[int | None] = mapped_column(
+    ForeignKey("EMS_DB.mst_reference_value.id"),
+    nullable=True
+    )
+
 
     # department = relationship(
     #     "Department"

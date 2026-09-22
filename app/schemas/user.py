@@ -8,7 +8,7 @@ from pydantic import (
     field_validator,
 )
 
-from app.models.user import Gender, Role, EmploymentType
+from app.models.user import  Role
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -32,12 +32,40 @@ class LoginResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str
+
+class UserAddressCreate(BaseModel):
+    address: str
+    city: str
+    state: str
+    pincode: str
+
+    @field_validator("address", "city", "state", "pincode", mode="before")
+    @classmethod
+    def strip_string_values(cls, value):
+        if value is None:
+            return value
+
+        if isinstance(value, str):
+            return value.strip()
+
+        return value
+
+class UserAddressResponse(BaseModel):
+    id: int
+    employee_id: int
+    address: str
+    city: str
+    state: str
+    pincode: str
+
+    model_config = ConfigDict(from_attributes=True)    
+
     
 class UserCreate(BaseModel):
     first_name: str = Field(..., max_length=100)
     last_name: str | None = Field(default=None, max_length=100)
     dob: date
-    gender: Gender | None = None
+    gender_id: int | None = None
     phonenumber: str = Field(..., max_length=20)
     email: EmailStr
     password: str
@@ -50,10 +78,10 @@ class UserCreate(BaseModel):
     updated_at: datetime
     #last_login: datetime | None = None
 
-    address: str
+    address: UserAddressCreate
     employee_id: str = Field(..., max_length=30)
     joining_date: date
-    employment_type: EmploymentType
+    employment_type_id: int
 
     emergency_contact: str = Field(..., max_length=20)
     blood_group: str | None = Field(default=None, max_length=10)
@@ -63,11 +91,9 @@ class UserCreate(BaseModel):
     @field_validator(
         "first_name",
         "last_name",
-        "address",
         "employee_id",
         "phonenumber",
         "emergency_contact",
-        "blood_group",
         mode="before"
     )
     @classmethod
@@ -143,7 +169,7 @@ class UserEdit(BaseModel):
     first_name: str | None = Field(default=None, max_length=100)
     last_name: str | None = Field(default=None, max_length=100)
     dob: date | None = None
-    gender: Gender | None = None
+    gender_id: int | None = None
     phonenumber: str | None = Field(default=None, max_length=20)
     email: EmailStr | None = None
     password: str | None = None
@@ -154,23 +180,22 @@ class UserEdit(BaseModel):
     dep_id: int | None = None
     designation_id: int | None = None
 
-    address: str | None = None
+    address: UserAddressCreate | None = None
     employee_id: str | None = Field(default=None, max_length=30)
     joining_date: date | None = None
-    employment_type: EmploymentType | None = None
+    employment_type_id: int | None = None
 
     emergency_contact: str | None = Field(default=None, max_length=20)
-    blood_group: str | None = Field(default=None, max_length=10)
+    blood_group_id: int | None = Field(default=None, max_length=10)
+    work_shift_id: int|None = None
 
     
     @field_validator(
         "first_name",
         "last_name",
-        "address",
         "employee_id",
         "phonenumber",
         "emergency_contact",
-        "blood_group",
         mode="before",
     )
     @classmethod
@@ -253,7 +278,7 @@ class UserResponse(BaseModel):
     first_name: str
     last_name: str | None = None
     dob: date
-    gender: Gender | None = None
+    gender_id: int | None = None
     phonenumber: str
     email: EmailStr
     role: Role
@@ -262,15 +287,15 @@ class UserResponse(BaseModel):
     dep_id: int | None = None
     designation_id: int | None = None
 
-    address: str
+    address: UserAddressResponse |None = None
     employee_id: str
     joining_date: date
-    employment_type: EmploymentType
+    employment_type_id: int
     salary: float | None = None
     lic_policy_number: str | None = None
 
     emergency_contact: str
-    blood_group: str | None = None
+    blood_group_id: int | None = None
 
     last_login: datetime | None = None
     created_at: datetime
