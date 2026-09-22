@@ -8,6 +8,7 @@ from app.core.security import (
     hash_password
 )
 from app.models.user import User
+from app.models.address import Address
 from app.schemas.user import (
     UserCreate,
     UserEdit,
@@ -47,6 +48,8 @@ def create_user(
 
     user_data = user.model_dump()
 
+    address_data = user_data.pop("address", None)
+
     password = user_data.pop("password")
 
     user_data["password_hash"] = hash_password(password)
@@ -54,6 +57,15 @@ def create_user(
     new_user = User(**user_data)
 
     db.add(new_user)
+    db.flush()
+    if address_data:
+        new_address = Address(
+            user_id=new_user.id,
+            **address_data
+        )
+
+        db.add(new_address)
+
     db.commit()
     db.refresh(new_user)
 

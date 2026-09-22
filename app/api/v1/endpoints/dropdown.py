@@ -36,7 +36,7 @@ def get_dropdown(
         .filter(
             ReferenceValue.reference_type_id == reference_type.id
         )
-        .order_by(ReferenceValue.sequence_number)
+        .order_by(ReferenceValue.sequence_number) 
         .all()
     )
 
