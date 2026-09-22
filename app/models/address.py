@@ -38,3 +38,4 @@ class Address(Base):
         String(20),
         nullable=False
     )
+    user = relationship("User", back_populates="address")
