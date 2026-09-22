@@ -69,60 +69,86 @@ def punch_in(
         )
 
 
-# 2. PUNCH OUT: Matches by attendance_id, calculates duration & sets status based on thresholds
-@router.patch("/punch-out/{attendance_id}", response_model=PunchOutResponse)
+# 2. PUNCH OUT: Automatically finds today's attendance record
+@router.patch(
+    "/punch-out",
+    response_model=PunchOutResponse,
+)
 def punch_out(
-    attendance_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     now = get_current_localized_time()
+    today = now.date()
 
+    # Find today's punch-in record for the logged-in user
     record = (
         db.query(Attendance)
         .filter(
-            Attendance.id == attendance_id,
             Attendance.user_id == current_user.id,
+            Attendance.date == today,
         )
         .first()
     )
+
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Punch-in record not found for this user.",
+            detail="You have not punched in for today.",
         )
 
+    # Prevent duplicate punch-out
     if record.check_out is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You have already punched out for this session.",
+            detail="You have already punched out for today.",
         )
 
-    out_time = now.time()
-    record.check_out = out_time
+    # Set punch-out time
+    record.check_out = now.time()
 
+    # Calculate working hours
     if record.check_in:
         check_in_dt = datetime.combine(
-            record.date, record.check_in, tzinfo=APP_TIMEZONE
+            record.date,
+            record.check_in,
+            tzinfo=APP_TIMEZONE,
         )
-        duration_seconds = (now - check_in_dt).total_seconds()
 
-        # Calculate exact hours rounded to 2 decimal places
-        hours = round(Decimal(str(duration_seconds)) / Decimal("3600"), 2)
+        duration_seconds = (
+            now - check_in_dt
+        ).total_seconds()
+
+        hours = round(
+            Decimal(str(duration_seconds)) / Decimal("3600"),
+            2,
+        )
+
         record.working_hours = hours
 
-        # Status criteria: 9+ hrs = PRESENT, 4.5 to <9 hrs = HALF_DAY, <4.5 hrs = ABSENT
+        # Update attendance status
         if hours >= Decimal("9.00"):
             record.status = AttendanceStatus.PRESENT
+
         elif hours >= Decimal("4.50"):
             record.status = AttendanceStatus.HALF_DAY
+
         else:
             record.status = AttendanceStatus.ABSENT
 
-    db.commit()
-    db.refresh(record)
-    return record
+    try:
+        db.commit()
+        db.refresh(record)
 
+        return record
+
+    except IntegrityError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to update attendance record.",
+        )
 
 # 3. GET ATTENDANCE HISTORY
 @router.get("/", response_model=List[AttendanceRead])
