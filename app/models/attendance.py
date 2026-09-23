@@ -26,7 +26,7 @@ class AttendanceStatus(str, PyEnum):
 class Attendance(Base):
 
     __tablename__ = "txn_attendence"
-    __table__args__ = {"schema": "EMS_DB"}
+    __table_args__ = {"schema": "EMS_DB"}
 
     id: Mapped[int] = mapped_column(
         primary_key=True,

@@ -109,7 +109,7 @@ class User(Base):
 )
 
     address= relationship("Address",
-                          back_populates="User",uselist=False)
+                          back_populates="user",uselist=False)
     
 
     employee_id: Mapped[str] = mapped_column(
