@@ -1,9 +1,10 @@
+
 from datetime import datetime
 from decimal import Decimal
-from typing import List
 from zoneinfo import ZoneInfo
-from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
+
+from fastapi import APIRouter, Depends,HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -13,8 +14,13 @@ from app.models.user import User
 from app.schemas.attendance import (
     AttendanceRead,
     PunchInResponse,
-    PunchOutResponse,
+    PunchOutResponse,AttendancePageResponse,AttendanceSummaryResponse
 )
+from app.services.attendance_service import (
+    get_attendance_summary,
+    get_attendance_history,
+)
+
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
@@ -139,46 +145,31 @@ def punch_out(
     try:
         db.commit()
         db.refresh(record)
-
         return record
 
     except IntegrityError:
         db.rollback()
-
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unable to update attendance record.",
         )
 
-# 3. GET ATTENDANCE HISTORY
-@router.get("/", response_model=List[AttendanceRead])
-def read_attendance_records(
-    skip: int = 0,
-    limit: int = 100,
+@router.get(
+    "",
+    response_model=AttendanceSummaryResponse
+)
+def get_attendance(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user)
 ):
-    query = db.query(Attendance)
-    user_role = getattr(current_user.role, "value", current_user.role)
-    if user_role != "admin":
-        query = query.filter(Attendance.user_id == current_user.id)
+    return get_attendance_summary(
+        db=db,
+        current_user=current_user 
+    )        
 
-    return query.order_by(Attendance.date.desc()).offset(skip).limit(limit).all()
-
-
-# 4. GET LOGGED-IN EMPLOYEE'S ATTENDANCE
-@router.get("/my", response_model=List[AttendanceRead])
-def get_my_attendance_history(
-    skip: int = 0,
-    limit: int = 31,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return (
-        db.query(Attendance)
-        .filter(Attendance.user_id == current_user.id)
-        .order_by(Attendance.date.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+@router.get("/history",
+            response_model=list[AttendanceRead])
+def attendance_history(db:Session = Depends(get_db),
+                           current_user: User = Depends(get_current_user)):
+    return get_attendance_history(db=db,
+                                  current_user=current_user)

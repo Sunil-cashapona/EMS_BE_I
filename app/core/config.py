@@ -41,6 +41,7 @@ from functools import lru_cache
 from urllib.parse import quote_plus
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
@@ -65,7 +66,8 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         password = quote_plus(self.database_password)
-
+        # NOTE: Use "postgresql+psycopg2" if you installed psycopg2, 
+        # or keep "postgresql+psycopg" if you installed psycopg (v3)
         return (
             f"postgresql+psycopg2://{self.database_user}:{password}"
             f"@{self.database_host}:{self.database_port}/{self.database_name}"
