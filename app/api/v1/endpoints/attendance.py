@@ -14,7 +14,7 @@ from app.models.user import User
 from app.schemas.attendance import (
     AttendanceRead,
     PunchInResponse,
-    PunchOutResponse,AttendancePageResponse
+    PunchOutResponse,AttendancePageResponse,AttendanceSummaryResponse
 )
 from app.services.attendance_service import (
     get_attendance_summary,
@@ -131,7 +131,7 @@ def punch_out(
 
 @router.get(
     "",
-    response_model=AttendancePageResponse
+    response_model=AttendanceSummaryResponse
 )
 def get_attendance(
     db: Session = Depends(get_db),
@@ -139,7 +139,7 @@ def get_attendance(
 ):
     return get_attendance_summary(
         db=db,
-        user_id=current_user.id
+        current_user=current_user 
     )        
 
 @router.get("/history",
