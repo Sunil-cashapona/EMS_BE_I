@@ -84,7 +84,7 @@ class UserCreate(BaseModel):
     employment_type_id: int
 
     emergency_contact: str = Field(..., max_length=20)
-    blood_group: str | None = Field(default=None, max_length=10)
+    blood_group_id: str | None = Field(default=None, max_length=10)
     salary:  float | None = None
     lic_policy_number: str |None=None
 
