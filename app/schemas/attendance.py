@@ -52,7 +52,7 @@ class PunchOutResponse(BaseModel):
     status: AttendanceStatus
 
     model_config = ConfigDict(from_attributes=True)
-''
+
 class AttendanceSummaryResponse(BaseModel):
     days_present: int
     days_absent: int
@@ -64,4 +64,17 @@ class AttendancePageResponse(BaseModel):
     records: list[AttendanceRead]
 
     model_config = ConfigDict(from_attributes=True)    
+
+
+class TodayAttendanceResponse(BaseModel):
+    attendance_id: int | None = None
+    date: DateType
+    check_in: TimeType | None = None
+    check_out: TimeType | None = None 
+    working_hours: Decimal | None = None 
+    status: AttendanceStatus
+    session_status: str
+    model_config = ConfigDict(from_attribbutes=True)  
+
+
 
