@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models.address import Address
 
 class Role(str, PyEnum):
     ADMIN = "admin"
@@ -123,9 +124,9 @@ class User(Base):
         nullable=False
     )
 
-    employment_type_id: Mapped[int|None] = mapped_column(
+    employment_type_id: Mapped[int | None] = mapped_column(
         ForeignKey("EMS_DB.mst_reference_value.id"),
-        nullable=False
+        nullable=True
     )
     
     salary: Mapped[float | None] = mapped_column(
@@ -144,7 +145,7 @@ class User(Base):
         nullable=False
     )
 
-    blood_group_id: Mapped[str | None] = mapped_column(
+    blood_group_id: Mapped[int | None] = mapped_column(
         ForeignKey("EMS_DB.mst_reference_value.id"),
         nullable=True
     )

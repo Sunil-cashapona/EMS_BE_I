@@ -22,7 +22,7 @@ from app.services.attendance_service import (
 )
 
 
-router = APIRouter(prefix="/attendance", tags=["Attendance"])
+router = APIRouter(tags=["Attendance"])
 
 APP_TIMEZONE = ZoneInfo("Asia/Kolkata")
 
@@ -75,35 +75,14 @@ def punch_in(
         )
 
 
-# 2. PUNCH OUT: Matches by attendance_id, calculates duration & sets status based on thresholds
-@router.patch("/punch-out/{attendance_id}", response_model=PunchOutResponse)
-def punch_out(
-    attendance_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    now = get_current_localized_time()
-
-    record = (
-        db.query(Attendance)
-        .filter(
-            Attendance.id == attendance_id,
-            Attendance.user_id == current_user.id,
-        )
-        .first()
-    )
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Punch-in record not found for this user.",
-        )
-
+def _process_punch_out(record: Attendance, db: Session) -> Attendance:
     if record.check_out is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You have already punched out for this session.",
         )
 
+    now = get_current_localized_time()
     out_time = now.time()
     record.check_out = out_time
 
@@ -128,6 +107,56 @@ def punch_out(
     db.commit()
     db.refresh(record)
     return record
+
+
+# 2. PUNCH OUT: Automatically matches today's active record for current_user (No ID needed)
+@router.patch("/punch-out", response_model=PunchOutResponse)
+def punch_out(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    now = get_current_localized_time()
+    today = now.date()
+
+    record = (
+        db.query(Attendance)
+        .filter(
+            Attendance.user_id == current_user.id,
+            Attendance.date == today,
+        )
+        .first()
+    )
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Punch-in record not found for today. Please punch in first.",
+        )
+
+    return _process_punch_out(record=record, db=db)
+
+
+# 2b. Optional fallback: Punch out by specific attendance_id
+@router.patch("/punch-out/{attendance_id}", response_model=PunchOutResponse)
+def punch_out_by_id(
+    attendance_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    record = (
+        db.query(Attendance)
+        .filter(
+            Attendance.id == attendance_id,
+            Attendance.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Punch-in record not found for this user.",
+        )
+
+    return _process_punch_out(record=record, db=db)
 
 @router.get(
     "",
