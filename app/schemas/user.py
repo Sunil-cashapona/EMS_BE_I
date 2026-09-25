@@ -290,7 +290,7 @@ class UserResponse(BaseModel):
     address: UserAddressResponse |None = None
     employee_id: str
     joining_date: date
-    employment_type_id: int
+    employment_type_id: int | None = None
     salary: float | None = None
     lic_policy_number: str | None = None
 

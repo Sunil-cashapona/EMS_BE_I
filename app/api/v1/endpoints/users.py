@@ -18,7 +18,6 @@ from app.schemas.user import (
 
 
 router = APIRouter(
-    prefix="/users",
     tags=["Users"]
 )
 
