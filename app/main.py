@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-
+import app.models
 # Import directly from the correct nested endpoints folder
 from app.api.v1.login import router as login_router
 from app.api.v1.endpoints.users import router as users_router
