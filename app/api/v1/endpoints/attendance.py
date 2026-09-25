@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 from sqlalchemy.exc import IntegrityError
-
+import os
 from fastapi import APIRouter, Depends,HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -11,24 +11,25 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.attendance import Attendance, AttendanceStatus
 from app.models.user import User
+from app.core.timezone import get_current_localized_time
 from app.schemas.attendance import (
     AttendanceRead,
     PunchInResponse,
-    PunchOutResponse,AttendancePageResponse,AttendanceSummaryResponse
+    PunchOutResponse,AttendancePageResponse,AttendanceSummaryResponse,
+    TodayAttendanceResponse
 )
 from app.services.attendance_service import (
     get_attendance_summary,
     get_attendance_history,
+    get_today_attendance
 )
 
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
-APP_TIMEZONE = ZoneInfo("Asia/Kolkata")
 
 
-def get_current_localized_time():
-    return datetime.now(APP_TIMEZONE)
+
 
 
 # 1. PUNCH IN: Returns strictly { "id": int, "check_in": "time" }
@@ -172,4 +173,12 @@ def get_attendance(
 def attendance_history(db:Session = Depends(get_db),
                            current_user: User = Depends(get_current_user)):
     return get_attendance_history(db=db,
-                                  current_user=current_user)
+                                  current_user=current_user) 
+
+
+@router.get("/today", response_model=TodayAttendanceResponse)
+def today_attendance(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    return get_today_attendance(db=db,
+                                current_user=current_user,)
