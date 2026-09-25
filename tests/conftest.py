@@ -7,8 +7,6 @@ from fastapi.testclient import TestClient
 from app.core.database import SessionLocal
 from app.core.security import get_current_user, security
 from app.main import app
-from app.models.department import Department
-from app.models.designation import Designation
 
 
 ADMIN_HEADERS = {"Authorization": "Bearer admin-test-token"}
@@ -56,15 +54,3 @@ def admin_headers():
 @pytest.fixture
 def employee_headers():
     return EMPLOYEE_HEADERS
-
-
-@pytest.fixture(autouse=True)
-def clean_dept_and_desig(db_session):
-    yield
-    db_session.query(Department).filter(
-        Department.dep_name.in_(["Quality Assurance", "QA & Automation", "Finance"])
-    ).delete(synchronize_session=False)
-    db_session.query(Designation).filter(
-        Designation.designation_name.in_(["QA Lead", "Test Lead", "Dev"])
-    ).delete(synchronize_session=False)
-    db_session.commit()
