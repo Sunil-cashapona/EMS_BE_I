@@ -11,7 +11,9 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.attendance import Attendance, AttendanceStatus
 from app.models.user import User
-from app.core.timezone import get_current_localized_time
+from app.core.timezone import get_current_localized_time, APP_TIMEZONE
+from app.services.notification_service import create_system_notification
+from app.models.notification import NotificationType
 from app.schemas.attendance import (
     AttendanceRead,
     PunchInResponse,
@@ -67,13 +69,27 @@ def punch_in(
         db.add(attendance_entry)
         db.commit()
         db.refresh(attendance_entry)
-        return attendance_entry
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Attendance record already exists for today.",
         )
+
+    # Trigger in-app notification confirming punch-in
+    try:
+        formatted_time = attendance_entry.check_in.strftime("%I:%M %p") if attendance_entry.check_in else "now"
+        create_system_notification(
+            db=db,
+            user_id=current_user.id,
+            title="Punch-In Successful",
+            message=f"You successfully punched in at {formatted_time} on {today.strftime('%d %b %Y')}.",
+            notification_type=NotificationType.ATTENDANCE,
+        )
+    except Exception:
+        pass
+
+    return attendance_entry
 
 
 def _process_punch_out(record: Attendance, db: Session) -> Attendance:
@@ -119,14 +135,28 @@ def _process_punch_out(record: Attendance, db: Session) -> Attendance:
     try:
         db.commit()
         db.refresh(record)
-        return record
-
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unable to update attendance record.",
         )
+
+    # Trigger in-app notification confirming punch-out
+    try:
+        formatted_out = record.check_out.strftime("%I:%M %p") if record.check_out else "now"
+        hours_msg = f" Total working hours: {record.working_hours} hrs." if record.working_hours is not None else ""
+        create_system_notification(
+            db=db,
+            user_id=record.user_id,
+            title="Punch-Out Successful",
+            message=f"You successfully punched out at {formatted_out}.{hours_msg}",
+            notification_type=NotificationType.ATTENDANCE,
+        )
+    except Exception:
+        pass
+
+    return record
 
 
 # 2. PUNCH OUT: Automatically matches today's active record for current_user (No ID needed)
