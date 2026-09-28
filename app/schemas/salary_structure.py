@@ -29,3 +29,10 @@ class SalaryStructureRead(BaseModel):
     effective_from: date
 
     model_config = ConfigDict(from_attributes=True)
+
+class CurrentSalaryStructureResponse(BaseModel):
+    basic_salary: Decimal
+    hra: Decimal
+    other_allowances: Decimal
+    gross_monthly_earnings: Decimal
+    effective_from: date    

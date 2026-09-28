@@ -2,7 +2,7 @@
 from datetime import datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError 
 import os
 from fastapi import APIRouter, Depends,HTTPException, status
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ from app.models.attendance import Attendance, AttendanceStatus
 from app.models.user import User
 from app.core.timezone import get_current_localized_time, APP_TIMEZONE
 from app.services.notification_service import create_system_notification
-from app.models.notification import NotificationType
+from app.models.notification import NotificationType 
 from app.schemas.attendance import (
     AttendanceRead,
     PunchInResponse,
