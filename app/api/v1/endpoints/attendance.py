@@ -11,7 +11,9 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.attendance import Attendance, AttendanceStatus
 from app.models.user import User
-from app.core.timezone import get_current_localized_time
+from app.core.timezone import get_current_localized_time, APP_TIMEZONE
+from app.services.notification_service import create_system_notification
+from app.models.notification import NotificationType
 from app.schemas.attendance import (
     AttendanceRead,
     PunchInResponse,
@@ -25,7 +27,7 @@ from app.services.attendance_service import (
 )
 
 
-router = APIRouter(prefix="/attendance", tags=["Attendance"])
+router = APIRouter(tags=["Attendance"])
 
 
 
@@ -67,7 +69,6 @@ def punch_in(
         db.add(attendance_entry)
         db.commit()
         db.refresh(attendance_entry)
-        return attendance_entry
     except IntegrityError:
         db.rollback()
         raise HTTPException(
@@ -75,44 +76,32 @@ def punch_in(
             detail="Attendance record already exists for today.",
         )
 
-
-# 2. PUNCH OUT: Automatically finds today's attendance record
-@router.patch(
-    "/punch-out",
-    response_model=PunchOutResponse,
-)
-def punch_out(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    now = get_current_localized_time()
-    today = now.date()
-
-    # Find today's punch-in record for the logged-in user
-    record = (
-        db.query(Attendance)
-        .filter(
-            Attendance.user_id == current_user.id,
-            Attendance.date == today,
+    # Trigger in-app notification confirming punch-in
+    try:
+        formatted_time = attendance_entry.check_in.strftime("%I:%M %p") if attendance_entry.check_in else "now"
+        create_system_notification(
+            db=db,
+            user_id=current_user.id,
+            title="Punch-In Successful",
+            message=f"You successfully punched in at {formatted_time} on {today.strftime('%d %b %Y')}.",
+            notification_type=NotificationType.ATTENDANCE,
         )
-        .first()
-    )
+    except Exception:
+        pass
 
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="You have not punched in for today.",
-        )
+    return attendance_entry
 
-    # Prevent duplicate punch-out
+
+def _process_punch_out(record: Attendance, db: Session) -> Attendance:
     if record.check_out is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You have already punched out for today.",
         )
 
-    # Set punch-out time
-    record.check_out = now.time()
+    now = get_current_localized_time()
+    out_time = now.time()
+    record.check_out = out_time
 
     # Calculate working hours
     if record.check_in:
@@ -146,14 +135,78 @@ def punch_out(
     try:
         db.commit()
         db.refresh(record)
-        return record
-
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Unable to update attendance record.",
         )
+
+    # Trigger in-app notification confirming punch-out
+    try:
+        formatted_out = record.check_out.strftime("%I:%M %p") if record.check_out else "now"
+        hours_msg = f" Total working hours: {record.working_hours} hrs." if record.working_hours is not None else ""
+        create_system_notification(
+            db=db,
+            user_id=record.user_id,
+            title="Punch-Out Successful",
+            message=f"You successfully punched out at {formatted_out}.{hours_msg}",
+            notification_type=NotificationType.ATTENDANCE,
+        )
+    except Exception:
+        pass
+
+    return record
+
+
+# 2. PUNCH OUT: Automatically matches today's active record for current_user (No ID needed)
+@router.patch("/punch-out", response_model=PunchOutResponse)
+def punch_out(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    now = get_current_localized_time()
+    today = now.date()
+
+    record = (
+        db.query(Attendance)
+        .filter(
+            Attendance.user_id == current_user.id,
+            Attendance.date == today,
+        )
+        .first()
+    )
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Punch-in record not found for today. Please punch in first.",
+        )
+
+    return _process_punch_out(record=record, db=db)
+
+
+# 2b. Optional fallback: Punch out by specific attendance_id
+@router.patch("/punch-out/{attendance_id}", response_model=PunchOutResponse)
+def punch_out_by_id(
+    attendance_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    record = (
+        db.query(Attendance)
+        .filter(
+            Attendance.id == attendance_id,
+            Attendance.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Punch-in record not found for this user.",
+        )
+
+    return _process_punch_out(record=record, db=db)
 
 @router.get(
     "",
