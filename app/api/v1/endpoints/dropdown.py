@@ -9,7 +9,6 @@ from app.schemas.reference_value import ReferenceValueRead
 
 
 router = APIRouter(
-    prefix="/dropdown",
     tags=["Dropdown"]
 )
 

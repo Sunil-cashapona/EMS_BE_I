@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user,authorization_user
 
+from app.services.notification_service import create_system_notification
+from app.models.notification import NotificationType
+
 from app.models.leave_request import (
     LeaveRequest,
     LeaveStatus,
@@ -215,6 +218,15 @@ def apply_for_leave(
     db.commit()
     db.refresh(leave)
 
+    # Trigger in-app notification confirming the submission to the employee
+    create_system_notification(
+        db=db,
+        user_id=current_user.id,
+        title="Leave Request Submitted",
+        message=f"Your request for {leave_type.type_name} ({requested_days} days) has been sent for approval.",
+        notification_type=NotificationType.LEAVE,
+    )
+
     return leave
 
 
@@ -329,4 +341,29 @@ def get_applications(
 
 
 
+@router.patch("/{leave_id}/status", response_model=LeaveRequestRead)
+def update_leave_status(
+    leave_id: int,
+    status: LeaveStatus,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(authorization_user),
+):
+    leave = db.query(LeaveRequest).filter(LeaveRequest.id == leave_id).first()
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave request not found")
 
+    leave.status = status
+    leave.approved = admin_user.id
+    db.commit()
+    db.refresh(leave)
+
+    status_str = "approved" if status == LeaveStatus.APPROVED else "rejected"
+    create_system_notification(
+        db=db,
+        user_id=leave.user_id,
+        title=f"Leave Request {status_str.capitalize()}",
+        message=f"Your leave request from {leave.start_date} to {leave.end_date} has been {status_str}.",
+        notification_type=NotificationType.LEAVE,
+    )
+
+    return leave
