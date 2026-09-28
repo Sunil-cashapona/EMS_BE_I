@@ -241,7 +241,7 @@ def get_my_applications(
     )
 
 
-@router.get("/admin/application")
+@router.get("/admin/application",response_model= list[AdminLeaveRequestRead])
 def get_applications(
     db: Session = Depends(get_db),
     current_user: User = Depends(authorization_user)
@@ -329,4 +329,167 @@ def get_applications(
 
 
 
+@router.put("/admin/application/{leave_id}/approve",response_model=AdminLeaveRequestRead)
+
+def approve_leave(
+    leave_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(authorization_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="admin access required"
+        )
+
+    leave = (
+        db.query(LeaveRequest).filter(LeaveRequest.id == leave_id).first()
+    )
+
+    if not leave:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Leave application not found"
+        )
+
+    if leave.status != LeaveStatus.PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Leave already finalized"
+        )
+
+    leave.status=LeaveStatus.APPROVED
+    leave.approved = current_user.id
+
+    db.commit()
+    db. refresh(leave)
+
+    user = (
+        db.query(User).filter(User.id == leave.user_id).first()
+        
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found"
+    )
+
+    leave_type = (
+        db.query(LeaveType)
+        .filter(LeaveType.id == leave.leave_type_id)
+        .first()
+    )
+
+    if not leave_type:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Leave type not found"
+        )
+
+    number_of_days = (
+        leave.end_date - leave.start_date
+    ).days + 1
+
+    employee_name = (
+        f"{user.first_name} {user.last_name or ''}"
+    ).strip()
+
+    return AdminLeaveRequestRead(
+        id=leave.id,
+        user_id=user.id,
+        employee_name=employee_name,
+        department=None,
+        leave_type_id=leave_type.id,
+        leave_type=leave_type.type_name,
+        start_date=leave.start_date,
+        end_date=leave.end_date,
+        number_of_days=number_of_days,
+        reason=leave.reason,
+        status=leave.status,
+        approved=leave.approved
+        
+    )
+
+@router.put("/admin/application/{leave_id}/reject",response_model=AdminLeaveRequestRead)
+
+def reject_leave(
+    leave_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(authorization_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="admin access required"
+        )
+
+    leave = (
+        db.query(LeaveRequest).filter(LeaveRequest.id == leave_id).first()
+    )
+
+    if not leave:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Leave application not found"
+        )
+
+    if leave.status != LeaveStatus.PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Leave already finalized"
+        )
+
+    leave.status=LeaveStatus.REJECTED
+    leave.approved = current_user.id
+
+    db.commit()
+    db. refresh(leave)
+
+    user = (
+        db.query(User).filter(User.id == leave.user_id).first()
+        
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found"
+    )
+
+    leave_type = (
+        db.query(LeaveType)
+        .filter(LeaveType.id == leave.leave_type_id)
+        .first()
+    )
+
+    if not leave_type:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Leave type not found"
+        )
+
+    number_of_days = (
+        leave.end_date - leave.start_date
+    ).days + 1
+
+    employee_name = (
+        f"{user.first_name} {user.last_name or ''}"
+    ).strip()
+
+    return AdminLeaveRequestRead(
+        id=leave.id,
+        user_id=user.id,
+        employee_name=employee_name,
+        department=None,
+        leave_type_id=leave_type.id,
+        leave_type=leave_type.type_name,
+        start_date=leave.start_date,
+        end_date=leave.end_date,
+        number_of_days=number_of_days,
+        reason=leave.reason,
+        status=leave.status,
+        approved=leave.approved
+        
+    )
 
