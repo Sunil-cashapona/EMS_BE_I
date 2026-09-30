@@ -352,7 +352,7 @@ def update_leave_status(
         raise HTTPException(status_code=404, detail="Leave request not found")
 
     leave.status = status
-    leave.approved = current_user.first_name
+    leave.approved = current_user.id
     db.commit()
     db.refresh(leave)
 

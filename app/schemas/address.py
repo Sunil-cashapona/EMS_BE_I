@@ -21,6 +21,6 @@ class UserAddressUpdate(BaseModel):
  
 class UserAddressResponse(UserAddressBase):
     id: int
-    employee_id: int
+    
  
     model_config = ConfigDict(from_attributes=True)

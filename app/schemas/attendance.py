@@ -78,3 +78,14 @@ class TodayAttendanceResponse(BaseModel):
 
 
 
+class AdminAttendanceRead(BaseModel):
+    id: int
+    user_id: int
+    employee_name: str
+    date: DateType
+    check_in: TimeType | None = None
+    check_out: TimeType | None = None
+    working_hours: Decimal | None = None
+    status: AttendanceStatus
+
+    model_config = ConfigDict(from_attributes=True)
