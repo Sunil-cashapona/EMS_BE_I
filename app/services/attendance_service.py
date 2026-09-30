@@ -2,9 +2,10 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.models.attendance import Attendance, AttendanceStatus
-from app.models.user import User
-from app.core.timezone import get_current_localized_time, APP_TIMEZONE
+from app.models.attendance import Attendance,AttendanceStatus
+from app.models.user import User 
+from app.core.timezone import get_current_localized_time,APP_TIMEZONE 
+from app.schemas.attendance import AdminAttendanceRead
 
 
 def get_attendance_summary(
@@ -113,39 +114,46 @@ def get_today_attendance(
     # CASE 2: User punched in but has NOT punched out
     # ============================================================
     if record.check_out is None:
-        return {
-            "attendance_id": record.id,
-            "date": record.date,
-            "check_in": record.check_in,
-            "check_out": None,
-            "working_hours": None,
-            "status": record.status,
+        return {"attendance_id":record.id,
+                "date": record.date,
+                "check_in": record.check_in,
+                "check_out":None,
+                "working_hours":None,
+                "status":record.status,
+                "session_status":"punched_in"} 
 
-            # User currently has an active attendance session.
-            "session_status": "punched_in",
-        }
 
-    # ============================================================
-    # CASE 3: User punched in AND punched out
-    # ============================================================
-    # FIX: This return was missing in your original code.
-    #
-    # After punch-out, record.check_out is NOT None, so the
-    # previous function reached the end without returning anything.
-    #
-    # Python then returned None automatically, which caused:
-    #
-    # ResponseValidationError:
-    # Input should be a valid dictionary or object
-    #
-    return {
-        "attendance_id": record.id,
-        "date": record.date,
-        "check_in": record.check_in,
-        "check_out": record.check_out,
-        "working_hours": record.working_hours,
-        "status": record.status,
+def get_admin_attendance(
+    db: Session,
+) -> list[AdminAttendanceRead]:
 
-        # Attendance session has been completed.
-        "session_status": "completed",
-    }
+    records = (
+        db.query(Attendance)
+        .join(User, Attendance.user_id == User.id)
+        .order_by(Attendance.date.desc())
+        .all()
+    )
+
+    result = []
+
+    for record in records:
+
+        employee_name = record.user.first_name
+
+        if record.user.last_name:
+            employee_name += f" {record.user.last_name}"
+
+        result.append(
+            AdminAttendanceRead(
+                id=record.id,
+                user_id=record.user_id,
+                employee_name=employee_name,
+                date=record.date,
+                check_in=record.check_in,
+                check_out=record.check_out,
+                working_hours=record.working_hours,
+                status=record.status,
+            )
+        )
+
+    return result

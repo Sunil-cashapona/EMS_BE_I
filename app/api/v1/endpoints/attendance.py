@@ -8,22 +8,23 @@ from fastapi import APIRouter, Depends,HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user,authorization_user
 from app.models.attendance import Attendance, AttendanceStatus
-from app.models.user import User
+from app.models.user import User    
 from app.core.timezone import get_current_localized_time, APP_TIMEZONE
 from app.services.notification_service import create_system_notification
 from app.models.notification import NotificationType 
 from app.schemas.attendance import (
     AttendanceRead,
     PunchInResponse,
-    PunchOutResponse,AttendancePageResponse,AttendanceSummaryResponse,
+    PunchOutResponse,AttendancePageResponse,AttendanceSummaryResponse,AdminAttendanceRead,
     TodayAttendanceResponse
 )
 from app.services.attendance_service import (
     get_attendance_summary,
     get_attendance_history,
-    get_today_attendance
+    get_today_attendance,
+    get_admin_attendance
 )
 
 
@@ -235,3 +236,11 @@ def today_attendance(
 ):
     return get_today_attendance(db=db,
                                 current_user=current_user,)
+
+@router.get("/admin",response_model=list[AdminAttendanceRead])
+def admin_view_attendance(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(authorization_user)
+):
+    return get_admin_attendance(db=db)
+    
