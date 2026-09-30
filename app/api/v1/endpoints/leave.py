@@ -253,7 +253,7 @@ def get_my_applications(
     )
 
 
-@router.get("/admin/application")
+@router.get("/admin/application",response_model= list[AdminLeaveRequestRead])
 def get_applications(
     db: Session = Depends(get_db),
     current_user: User = Depends(authorization_user)
@@ -340,20 +340,19 @@ def get_applications(
     return result
 
 
-
-@router.patch("/{leave_id}/status", response_model=LeaveRequestRead)
+@router.patch("/{leave_id}/admin/status", response_model=LeaveRequestRead)
 def update_leave_status(
     leave_id: int,
     status: LeaveStatus,
     db: Session = Depends(get_db),
-    admin_user: User = Depends(authorization_user),
+    current_user: User = Depends(authorization_user),
 ):
     leave = db.query(LeaveRequest).filter(LeaveRequest.id == leave_id).first()
     if not leave:
         raise HTTPException(status_code=404, detail="Leave request not found")
 
     leave.status = status
-    leave.approved = admin_user.id
+    leave.approved = current_user.first_name
     db.commit()
     db.refresh(leave)
 

@@ -59,3 +59,14 @@ class SalaryRecordRead(BaseModel):
     status: SalaryStatus
 
     model_config = ConfigDict(from_attributes=True)
+
+class SalaryHistoryResponse(BaseModel):
+    id: int
+    month_year: str
+    payment_date: date |None=None 
+    basic_salary: Decimal
+    gross_earnings: Decimal
+    total_deductions: Decimal
+    net_take_home: Decimal 
+    status: SalaryStatus
+    payslip_file: str | None = None  

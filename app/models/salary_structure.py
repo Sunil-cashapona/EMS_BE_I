@@ -48,5 +48,5 @@ class SalaryStructure(Base):
     )
 
     user = relationship(
-        "User"
+        "User",back_populates = "salary_structure"
     )

@@ -92,9 +92,7 @@ class AdminLeaveRequestRead(BaseModel):
 
     status: LeaveStatus
 
-    approved: int | None = None
-
-    applied_at: datetime
+    
 
     model_config = ConfigDict(
         from_attributes=True
