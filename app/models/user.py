@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from enum import Enum as PyEnum
 from sqlalchemy import Numeric
+from decimal import Decimal
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -129,10 +130,13 @@ class User(Base):
         nullable=True
     )
     
-    salary: Mapped[float | None] = mapped_column(
+    salary: Mapped[Decimal | None] = mapped_column(
     Numeric(12, 2),
     nullable=True
     )
+
+    salary_structure = relationship("SalaryStructure",back_populates= "user",
+                                  uselist = False)
 
     lic_policy_number: Mapped[str | None] = mapped_column(
     String(50),

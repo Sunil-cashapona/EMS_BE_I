@@ -11,7 +11,7 @@ class PayrollSettingType(str, Enum):
     ESI = "esi"
 
 
-class PayrollSettingCreate(BaseModel):
+class PayrollSettingCreate(BaseModel): 
     type: PayrollSettingType
     rate_percent: Decimal = Field(..., max_digits=5, decimal_places=2)
     effective_from: date
