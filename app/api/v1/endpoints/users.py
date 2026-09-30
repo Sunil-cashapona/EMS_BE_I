@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from decimal import Decimal
 
 from app.core.database import get_db
 from app.core.security import (
@@ -9,6 +10,7 @@ from app.core.security import (
 )
 from app.models.user import User
 from app.models.address import Address
+from app.models.salary_structure import SalaryStructure
 from app.schemas.user import (
     UserCreate,
     UserEdit,
@@ -57,6 +59,7 @@ def create_user(
 
     db.add(new_user)
     db.flush()
+
     if address_data:
         new_address = Address(
             user_id=new_user.id,
@@ -64,11 +67,34 @@ def create_user(
         )
 
         db.add(new_address)
+    # Create salary structure from annual CTC
+    if new_user.salary is not None:
+
+        annual_ctc = Decimal(str(new_user.salary))
+        monthly_ctc = annual_ctc / Decimal("12")
+
+        basic_salary = monthly_ctc * Decimal("0.60")
+        hra = monthly_ctc * Decimal("0.30")
+        other_allowances = monthly_ctc - basic_salary - hra
+
+        new_salary_structure = SalaryStructure(
+            user_id=new_user.id,
+            basic_salary=basic_salary,
+            hra=hra,
+            other_allowances=other_allowances,
+            effective_from=new_user.joining_date
+        )
+
+        db.add(new_salary_structure)
+    
 
     db.commit()
     db.refresh(new_user)
-
-    return new_user
+    db.refresh(new_salary_structure)
+    return {
+        **new_user.__dict__,
+        "salary_structure": SalaryStructure 
+    }
 
 
 

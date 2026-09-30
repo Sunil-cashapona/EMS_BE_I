@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
+from app.schemas.salary_structure import SalaryStructureRead
 
 from pydantic import (
     BaseModel,
@@ -59,7 +60,13 @@ class UserAddressResponse(BaseModel):
     state: str
     pincode: str
 
-    model_config = ConfigDict(from_attributes=True)    
+    model_config = ConfigDict(from_attributes=True) 
+
+class SalaryStructureCreate(BaseModel):
+    basic_salary:Decimal
+    hra:Decimal
+    other_allowances:Decimal
+    effective_from:date
 
     
 class UserCreate(BaseModel):
@@ -85,8 +92,8 @@ class UserCreate(BaseModel):
     employment_type_id: int
 
     emergency_contact: str = Field(..., max_length=20)
-    blood_group_id: int  
-    salary:  Decimal | None = None
+    blood_group_id: str | None = Field(default=None, max_length=10)
+    salary:  float | None = None
     lic_policy_number: str |None=None
 
     @field_validator(
@@ -292,7 +299,8 @@ class UserResponse(BaseModel):
     employee_id: str
     joining_date: date
     employment_type_id: int | None = None
-    salary: float | None = None
+    salary: Decimal | None = None
+    salary_structure:SalaryStructureRead | None = None
     lic_policy_number: str | None = None
 
     emergency_contact: str
