@@ -74,7 +74,7 @@ class TodayAttendanceResponse(BaseModel):
     working_hours: Decimal | None = None 
     status: AttendanceStatus
     session_status: str
-    model_config = ConfigDict(from_attribbutes=True)  
+    model_config = ConfigDict(from_attributes=True)  #removed the duplicates bb's
 
 
 
