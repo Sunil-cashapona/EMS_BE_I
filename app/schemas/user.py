@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from decimal import Decimal
 
 from pydantic import (
     BaseModel,
@@ -84,8 +85,8 @@ class UserCreate(BaseModel):
     employment_type_id: int
 
     emergency_contact: str = Field(..., max_length=20)
-    blood_group_id: int | None 
-    salary:  float | None = None
+    blood_group_id: int  
+    salary:  Decimal | None = None
     lic_policy_number: str |None=None
 
     @field_validator(
