@@ -31,8 +31,16 @@ class SalaryStructureRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class CurrentSalaryStructureResponse(BaseModel):
+    annual_ctc: Decimal
+    monthly_ctc: Decimal 
     basic_salary: Decimal
     hra: Decimal
     other_allowances: Decimal
     gross_monthly_earnings: Decimal
+    pf: Decimal
+    esi: Decimal
+    professional_tax: Decimal
+    lic_deductions: Decimal
+    total_deductions: Decimal 
+    net_take_home: Decimal
     effective_from: date    
