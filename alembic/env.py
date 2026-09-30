@@ -14,7 +14,7 @@ from alembic import context
 from sqlalchemy import engine_from_config,pool,text 
 from app.core.config import settings
 from app.core.database import Base, engine
-
+from app.models.session import UserSession
 import app.models.department
 import app.models.designation
 import app.models.file

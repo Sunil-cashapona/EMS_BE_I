@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.models.attendance import Attendance,AttendanceStatus
 from app.models.user import User 
 from app.core.timezone import get_current_localized_time,APP_TIMEZONE 
+from app.schemas.attendance import AdminAttendanceRead
 
 def get_attendance_summary(db: Session, 
                            current_user: User):
@@ -63,3 +64,39 @@ def get_today_attendance(db: Session, current_user: User):
                 "working_hours":None,
                 "status":record.status,
                 "session_status":"punched_in"} 
+
+
+def get_admin_attendance(
+    db: Session,
+) -> list[AdminAttendanceRead]:
+
+    records = (
+        db.query(Attendance)
+        .join(User, Attendance.user_id == User.id)
+        .order_by(Attendance.date.desc())
+        .all()
+    )
+
+    result = []
+
+    for record in records:
+
+        employee_name = record.user.first_name
+
+        if record.user.last_name:
+            employee_name += f" {record.user.last_name}"
+
+        result.append(
+            AdminAttendanceRead(
+                id=record.id,
+                user_id=record.user_id,
+                employee_name=employee_name,
+                date=record.date,
+                check_in=record.check_in,
+                check_out=record.check_out,
+                working_hours=record.working_hours,
+                status=record.status,
+            )
+        )
+
+    return result

@@ -92,8 +92,8 @@ class UserCreate(BaseModel):
     employment_type_id: int
 
     emergency_contact: str = Field(..., max_length=20)
-    blood_group_id: int 
-    salary:  Decimal | None = None 
+    blood_group_id: str | None = Field(default=None, max_length=10)
+    salary:  float | None = None
     lic_policy_number: str |None=None
 
     @field_validator(
@@ -194,7 +194,7 @@ class UserEdit(BaseModel):
     employment_type_id: int | None = None
 
     emergency_contact: str | None = Field(default=None, max_length=20)
-    blood_group_id: int | None = Field(default=None, max_length=10)
+    blood_group_id: int | None 
     work_shift_id: int|None = None
 
     

@@ -112,13 +112,13 @@ def get_my_profile(
 
 
 @router.get(
-    "/{employee_id}",
+    "/admin/{employee_id}",
     response_model=UserResponse
 )
 def get_user(
     employee_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(authorization_user)
 ):
     user = (
         db.query(User)
@@ -187,7 +187,7 @@ def update_user(
 
 
 @router.delete(
-    "/",
+    "/admin",
     status_code=status.HTTP_200_OK
 )
 def delete_user(
@@ -214,7 +214,7 @@ def delete_user(
         "message": "User deleted successfully",
     }
 
-@router.patch("/{employee_id}/status")
+@router.patch("/admin/{employee_id}/status")
 def update_user_status(
     employee_id: str, 
     is_active:bool,
