@@ -7,7 +7,7 @@ from app.models.user import User
 from app.schemas.reports.employee_report import EmployeeMasterReportResponse
 from app.services.reports.report_service import get_employee_master_report
 from app.services.reports.attendance import get_attendance_report
-from app.schemas.reports.attdendance_report import AttendanceReportResponse
+from app.schemas.reports.attendance_report import AttendanceReportResponse
 from app.schemas.reports.leave_report import LeaveReportResponse
 from app.schemas.reports.salary_report import SalaryPayrollReportResponse
 from app.services.reports.salary import get_salary_payroll_report
