@@ -9,6 +9,7 @@ from app.api.v1.endpoints.leave import router as leave_router
 from app.api.v1.endpoints.notifications import router as notifications_router  # <--- 1. IMPORT
 from app.api.v1.endpoints.reports import router as report_router
 from app.api.v1.endpoints.salary import router as salary_router
+from app.api.v1.endpoints.directory import router as directory_router
 
 app = FastAPI(title="Employee Management System", version="0.1.0")
 
@@ -20,5 +21,5 @@ app.include_router(dropdown_router, prefix="/dropdown", tags=["Dropdown"])
 app.include_router(leave_router)
 app.include_router(notifications_router, prefix="/notifications")  # <--- Added
 app.include_router(report_router)
-
+app.include_router(directory_router)
 app.include_router(salary_router)  

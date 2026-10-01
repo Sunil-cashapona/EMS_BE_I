@@ -16,7 +16,7 @@ class LeaveReportItem(BaseModel):
 class LeaveReportSummary(BaseModel):
     total_applied: int
     approved: int
-    pending_review: int
+    reject_review: int
     
 
 class LeaveReportResponse(BaseModel):

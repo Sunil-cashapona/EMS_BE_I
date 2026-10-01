@@ -6,6 +6,8 @@ from app.models.salary_record import SalaryRecord,SalaryStatus
 from app.models.salary_structure import SalaryStructure
 from app.models.payroll_settings import PayrollSetting, PayrollSettingType
 from app.models.user import User 
+from app.models.notification import NotificationType
+from app.services.notification_service import create_system_notification
 
 def get_salary_history(db: Session, user_id : int):
     records = (db.query(SalaryRecord)
@@ -264,5 +266,13 @@ def generate_salary_record(
     db.add(salary_record)
     db.commit()
     db.refresh(salary_record)
+
+    create_system_notification(
+        db=db,
+        user_id=user_id,
+        title="Salary Generated",
+        message=f"Salary for {month_year} has been generated. Net salary: ₹{net_salary:.2f}.",
+        notification_type=NotificationType.SALARY,
+    )
 
     return salary_record

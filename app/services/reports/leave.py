@@ -26,7 +26,7 @@ def get_leave_report(db: Session):
     records = []
 
     approved_count = 0
-    pending_count = 0
+    reject_count = 0
 
     for leave, first_name, last_name in leave_requests:
 
@@ -44,8 +44,8 @@ def get_leave_report(db: Session):
         if leave.status == LeaveStatus.APPROVED:
             approved_count += 1
 
-        elif leave.status == LeaveStatus.PENDING:
-            pending_count += 1
+        elif leave.status == LeaveStatus.REJECTED:
+            reject_count += 1
 
         records.append(
             {
@@ -64,7 +64,7 @@ def get_leave_report(db: Session):
         "summary": {
             "total_applied": total_applied,
             "approved": approved_count,
-            "pending_review": pending_count,
+            "reject_review": reject_count,
         },
         "records": records,
     }
