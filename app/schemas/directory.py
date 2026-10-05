@@ -2,7 +2,7 @@ from datetime import date
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class EmployeeDiretoryResponse(BaseModel):
+class EmployeeDirectoryResponse(BaseModel):
     employee_id: str
     employee_name: str
     email: str
@@ -13,4 +13,11 @@ class EmployeeDiretoryResponse(BaseModel):
 
 model_config = ConfigDict(from_attributes=True)
 
+
+class EmployeeDirectoryPaginationResponse(BaseModel):
+    employees: list[EmployeeDirectoryResponse]
+    total: int = Field(..., description="Total number of employees")
+    page: int = Field(..., description="Current page number")
+    size: int = Field(..., description="Number of employees per page")
+    total_pages: int = Field(..., description="Total number of pages")
 

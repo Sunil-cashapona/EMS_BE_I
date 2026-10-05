@@ -1,15 +1,51 @@
+from math import ceil
+
+from sqlalchemy import or_
 from  sqlalchemy.orm import Session
 from app.models.user import User
 
-from app.schemas.directory import EmployeeDiretoryResponse
 
 
-def get_employee_directory(db: Session):
+def get_employee_directory(
+        db: Session,
+        page: int=1,
+        size: int=10,
+        search: str | None= None,
+        dep_id: int | None= None,
+    ):
 
+    query = db.query(User)
+
+    if search  and search.strip():
+        search_value = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                User.first_name.ilike(search_value),
+                User.last_name.ilike(search_value),
+                User.email.ilike(search_value),
+                User.employee_id.ilike(search_value),
+            )
+        )
+
+    if dep_id is not     None:
+        query = query.filter(User.dep_id == dep_id)
+
+    
+
+    total = query.count()
+
+    offset = (page - 1) * size
     users = (
-        db.query(User).order_by
-        (User.id.asc()).all()
+        query
+        .order_by(User.id.asc())
+        .offset(offset)
+        .limit(size)
+        .all()
     )
+
+    
+
+
 
     employees=[]
 
@@ -38,4 +74,17 @@ def get_employee_directory(db: Session):
             }
         )
 
-    return employees
+
+    total_pages = (
+        ceil(total / size)
+        if total > 0
+        else 0
+    )
+
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "total_pages": total_pages,
+        "employees": employees,
+    }
