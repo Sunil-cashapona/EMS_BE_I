@@ -80,9 +80,7 @@ def get_today_attendance(
     db: Session,
     current_user: User
 ):
-    # FIX: Get today's date using the application's configured timezone.
     today = get_current_localized_time().date()
-
     record = (
         db.query(Attendance)
         .filter(
@@ -92,9 +90,7 @@ def get_today_attendance(
         .first()
     )
 
-    # ============================================================
     # CASE 1: User has NOT punched in today
-    # ============================================================
     if not record:
         return {
             "attendance_id": None,
@@ -102,26 +98,32 @@ def get_today_attendance(
             "check_in": None,
             "check_out": None,
             "working_hours": None,
-
-            # FIX: This can be None because there is no attendance
-            # record yet. The schema has been changed accordingly.
             "status": None,
-
             "session_status": "not_punched",
         }
 
-    # ============================================================
     # CASE 2: User punched in but has NOT punched out
-    # ============================================================
     if record.check_out is None:
-        return {"attendance_id":record.id,
-                "date": record.date,
-                "check_in": record.check_in,
-                "check_out":None,
-                "working_hours":None,
-                "status":record.status,
-                "session_status":"punched_in"} 
+        return {
+            "attendance_id": record.id,
+            "date": record.date,
+            "check_in": record.check_in,
+            "check_out": None,
+            "working_hours": None,
+            "status": record.status,
+            "session_status": "punched_in",
+        }
 
+    # CASE 3: User has punched in and punched out
+    return {
+        "attendance_id": record.id,
+        "date": record.date,
+        "check_in": record.check_in,
+        "check_out": record.check_out,
+        "working_hours": record.working_hours,
+        "status": record.status,
+        "session_status": "punched_out",
+    }
 
 def get_admin_attendance(
     db: Session,
