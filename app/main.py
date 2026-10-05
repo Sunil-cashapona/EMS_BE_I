@@ -23,3 +23,8 @@ app.include_router(notifications_router, prefix="/notifications")  # <--- Added
 app.include_router(report_router)
 app.include_router(directory_router)
 app.include_router(salary_router)  
+### --- [NEW / ADDED: Workspace Dashboard Router] ---
+from app.api.v1.endpoints.workspace import router as workspace_router
+
+app.include_router(workspace_router)
+### --- [END NEW / ADDED] ---

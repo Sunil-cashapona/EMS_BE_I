@@ -66,17 +66,16 @@ class AttendancePageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)    
 
 
+
 class TodayAttendanceResponse(BaseModel):
     attendance_id: int | None = None
     date: DateType
     check_in: TimeType | None = None
-    check_out: TimeType | None = None 
-    working_hours: Decimal | None = None 
-    status: AttendanceStatus
+    check_out: TimeType | None = None
+    working_hours: Decimal | None = None
+    status: AttendanceStatus | None = None  # <-- Change from AttendanceStatus to allow None
     session_status: str
-    model_config = ConfigDict(from_attribbutes=True)  
-
-
+    model_config = ConfigDict(from_attributes=True)
 
 class AdminAttendanceRead(BaseModel):
     id: int
