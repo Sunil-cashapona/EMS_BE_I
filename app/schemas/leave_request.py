@@ -97,3 +97,10 @@ class AdminLeaveRequestRead(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
     )
+
+class AdminLeaveApplicationResponse(BaseModel):
+    items: list[AdminLeaveRequestRead]
+    total: int
+    page: int
+    size: int
+    total_pages: int

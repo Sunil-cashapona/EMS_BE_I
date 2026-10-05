@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from fastapi import (
     APIRouter,
     Depends,
@@ -10,24 +8,28 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import get_current_user,authorization_user
-
-from app.services.notification_service import create_system_notification
-from app.models.notification import NotificationType
-
-from app.models.leave_request import (
-    LeaveRequest,
-    LeaveStatus,
+from app.core.security import (
+    get_current_user,
+    authorization_user,
 )
 
+from app.services.leave import (
+    leave_balance,
+    apply_leave,
+    get_my_leave_applications,
+    get_all_leave_applications,
+    update_leave_status,
+)
+
+from app.models.leave_request import LeaveStatus
 from app.models.user import User
-from app.models.leave_type import LeaveType
 
 from app.schemas.leave_request import (
     LeaveApplyRequest,
     LeaveRequestRead,
     LeaveBalanceResponse,
-    AdminLeaveRequestRead
+    AdminLeaveRequestRead,
+    AdminLeaveApplicationResponse,
 )
 
 
@@ -35,8 +37,6 @@ router = APIRouter(
     prefix="/leave",
     tags=["Leave Management"],
 )
-
-
 
 
 @router.get(
@@ -47,53 +47,10 @@ def get_leave_balance(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
-    leave_types = (
-        db.query(LeaveType)
-        .order_by(LeaveType.id)
-        .all()
+    return leave_balance(
+        db=db,
+        user_id=current_user.id
     )
-
-    result = []
-
-    for leave_type in leave_types:
-
-        approved_leaves = (
-            db.query(LeaveRequest)
-            .filter(
-                LeaveRequest.user_id == current_user.id,
-                LeaveRequest.leave_type_id == leave_type.id,
-                LeaveRequest.status == LeaveStatus.APPROVED
-            )
-            .all()
-        )
-
-        # Calculate used days
-        used_days = 0
-
-        for leave in approved_leaves:
-            used_days += (
-                leave.end_date - leave.start_date
-            ).days + 1
-
-        # Calculate remaining days
-        remaining_days = (
-            leave_type.max_days_per_year - used_days
-        )
-
-        result.append(
-            {
-                "leave_type_id": leave_type.id,
-                "leave_type_name": leave_type.type_name,
-                "total_days": leave_type.max_days_per_year,
-                "used_days": used_days,
-                "remaining_days": max(remaining_days, 0)
-            }
-        )
-
-    return result
-
-
 
 
 @router.post(
@@ -106,130 +63,11 @@ def apply_for_leave(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
-    
-
-    if request.start_date > request.end_date:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Start date cannot be after end date."
-        )
-
-    
-
-    leave_type = (
-        db.query(LeaveType)
-        .filter(
-            LeaveType.id == request.leave_type_id
-        )
-        .first()
-    )
-
-    if not leave_type:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Leave type not found."
-        )
-
-    
-
-    requested_days = (
-        request.end_date - request.start_date
-    ).days + 1
-
-    
-
-    overlapping_leave = (
-        db.query(LeaveRequest)
-        .filter(
-            LeaveRequest.user_id == current_user.id,
-
-            LeaveRequest.status.in_([
-                LeaveStatus.PENDING,
-                LeaveStatus.APPROVED
-            ]),
-
-            LeaveRequest.start_date <= request.end_date,
-            LeaveRequest.end_date >= request.start_date
-        )
-        .first()
-    )
-
-    if overlapping_leave:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You already have a leave request for these dates."
-        )
-
-    
-
-    approved_leaves = (
-        db.query(LeaveRequest)
-        .filter(
-            LeaveRequest.leave_type_id == request.leave_type_id,
-            LeaveRequest.user_id == current_user.id,
-            LeaveRequest.status == LeaveStatus.APPROVED
-        )
-        .all()
-    )
-
-    
-
-    used_days = 0
-
-    for leave in approved_leaves:
-        used_days += (
-            leave.end_date - leave.start_date
-        ).days + 1
-
-    
-
-    remaining_days = (
-        leave_type.max_days_per_year - used_days
-    )
-
-    
-
-    if requested_days > remaining_days:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                f"Only {remaining_days} days remaining "
-                f"for {leave_type.type_name}."
-            )
-        )
-
-    
-
-    leave = LeaveRequest(
-        user_id=current_user.id,
-        leave_type_id=leave_type.id,
-        start_date=request.start_date,
-        end_date=request.end_date,
-        reason=request.reason,
-        status=LeaveStatus.PENDING,
-        approved=None,
-        applied_at=datetime.utcnow()
-    )
-
-    
-
-    db.add(leave)
-    db.commit()
-    db.refresh(leave)
-
-    # Trigger in-app notification confirming the submission to the employee
-    create_system_notification(
+    return apply_leave(
         db=db,
         user_id=current_user.id,
-        title="Leave Request Submitted",
-        message=f"Your request for {leave_type.type_name} ({requested_days} days) has been sent for approval.",
-        notification_type=NotificationType.LEAVE,
+        request=request
     )
-
-    return leave
-
-
 
 
 @router.get(
@@ -240,21 +78,21 @@ def get_my_applications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
-    return (
-        db.query(LeaveRequest)
-        .filter(
-            LeaveRequest.user_id == current_user.id
-        )
-        .order_by(
-            LeaveRequest.applied_at.desc()
-        )
-        .all()
+    return get_my_leave_applications(
+        db=db,
+        user_id=current_user.id
     )
 
 
-@router.get("/admin/application",response_model= list[AdminLeaveRequestRead])
+@router.get(
+    "/admin/application",
+    response_model=AdminLeaveApplicationResponse
+)
 def get_applications(
+    page: int = 1,
+    size: int = 10,
+    search: str | None = None,
+    status_filter: LeaveStatus | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(authorization_user)
 ):
@@ -265,104 +103,35 @@ def get_applications(
             detail="Admin access required"
         )
 
-    applications=(
-        db.query(LeaveRequest).order_by(LeaveRequest.applied_at.desc()).all()
-
-
+    return get_all_leave_applications(
+        db=db,
+        page=page,
+        size=size,
+        search=search,
+        status_filter=status_filter,
     )
 
-    result = []
 
-    for application in applications:
-
-        user = (
-            db.query(User)
-            .filter(
-                User.id == application.user_id
-            )
-            .first()
-        )
-
-        leave_type = (
-            db.query(LeaveType)
-            .filter(
-                LeaveType.id == application.leave_type_id
-            )
-            .first()
-        )
-
-        if not user:
-            continue
-
-        if not leave_type:
-            continue
-
-        number_of_days = (
-            application.end_date -
-            application.start_date
-        ).days + 1
-
-        employee_name = (
-            f"{user.first_name} "
-            f"{user.last_name or ''}"
-        ).strip()
-
-        result.append(
-            AdminLeaveRequestRead(
-                id=application.id,
-
-                user_id=user.id,
-
-                employee_name=employee_name,
-
-                department=None,
-
-                leave_type_id=leave_type.id,
-
-                leave_type=leave_type.type_name,
-
-                start_date=application.start_date,
-
-                end_date=application.end_date,
-
-                number_of_days=number_of_days,
-
-                reason=application.reason,
-
-                status=application.status,
-
-                approved=application.approved,
-
-                applied_at=application.applied_at
-            )
-        )
-
-    return result
-
-
-@router.patch("/{leave_id}/admin/status", response_model=LeaveRequestRead)
-def update_leave_status(
+@router.patch(
+    "/{leave_id}/admin/status",
+    response_model=LeaveRequestRead
+)
+def update_leave_status_endpoint(
     leave_id: int,
     status: LeaveStatus,
     db: Session = Depends(get_db),
     current_user: User = Depends(authorization_user),
 ):
-    leave = db.query(LeaveRequest).filter(LeaveRequest.id == leave_id).first()
-    if not leave:
-        raise HTTPException(status_code=404, detail="Leave request not found")
 
-    leave.status = status
-    leave.approved = current_user.id
-    db.commit()
-    db.refresh(leave)
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin access required"
+        )
 
-    status_str = "approved" if status == LeaveStatus.APPROVED else "rejected"
-    create_system_notification(
+    return update_leave_status(
         db=db,
-        user_id=leave.user_id,
-        title=f"Leave Request {status_str.capitalize()}",
-        message=f"Your leave request from {leave.start_date} to {leave.end_date} has been {status_str}.",
-        notification_type=NotificationType.LEAVE,
+        leave_id=leave_id,
+        new_status=status,
+        admin_user_id=current_user.id
     )
-
-    return leave

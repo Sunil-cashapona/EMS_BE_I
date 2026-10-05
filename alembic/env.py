@@ -7,7 +7,9 @@ sys.path.insert(
         os.path.join(os.path.dirname(__file__), "..")
     )
 )
+from app.core.database import Base
 
+target_metadata = Base.metadata 
 from logging.config import fileConfig
 
 from alembic import context
