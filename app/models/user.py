@@ -159,12 +159,16 @@ class User(Base):
     )
 
 
-    # department = relationship(
-    #     "Department"
-    # )
-
-    # designation = relationship(
-    #     "Designation"
-    # )
-
+### --- [NEW / ADDED: Auto-fetch Reference Names] ---
+    department_ref = relationship(
+        "ReferenceValue",
+        foreign_keys=[dep_id],
+        lazy="joined"
+    )
+    designation_ref = relationship(
+        "ReferenceValue",
+        foreign_keys=[designation_id],
+        lazy="joined"
+    )
+### --- [END NEW / ADDED] ---
 
